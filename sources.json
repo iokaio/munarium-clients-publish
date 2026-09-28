@@ -1,0 +1,11 @@
+{
+  "$comment": "The source repositories this repository publishes client packages from, and the package families each may publish. A family not listed here is refused whatever the source's clients/release.json declares. Changing this file changes what can reach a public registry; it is reviewed like a release setting.",
+  "iokaio/munarium": {
+    "branch": "main",
+    "families": ["server-crates", "server-clients"]
+  },
+  "iokaio/munarium-matrix": {
+    "branch": "main",
+    "families": ["matrix-clients"]
+  }
+}
