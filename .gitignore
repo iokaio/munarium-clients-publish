@@ -1,2 +1,25 @@
 __pycache__/
 *.py[cod]
+
+
+# ---------------------------------------------------------------- shared ---
+# Editor, OS and tool residue. Carried from iokaio/munarium's root .gitignore;
+# the Python lines above predate it.
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/node_modules/
+# A local run of the hygiene gates leaves the gitleaks binary and archive behind.
+gitleaks
+gitleaks.exe
+gitleaks.tar.gz

@@ -1,0 +1,33 @@
+Munarium client publishing (munarium-clients-publish)
+Copyright (c) 2026 Ioka LLC
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+these files except in compliance with the License. A copy of the License is in
+the LICENSE file beside this notice.
+
+"Munarium" and "Ioka" are trademarks of Ioka LLC. The License grants no right to
+use them beyond what is needed to describe the origin of these files. What is
+and is not permitted is in TRADEMARK.md.
+
+This repository is the one place Munarium client packages are built for release
+and published from: the publishing workflow, the source allowlist and the
+release planner. The clients themselves, their tests and their CI live with the
+service they speak to, in iokaio/munarium (the Server client libraries) and
+iokaio/munarium-matrix (the Matrix client libraries), each under the same
+License. This repository holds no client source and publishes nothing of its
+own.
+
+The publishing credentials and trusted-publisher registrations the workflow uses
+live in this repository's protected release environment and on the registries.
+None of them is in the tree, and nothing in the tree grants a right to use them.
+
+Munarium Enterprise is a separate, proprietary distribution built on Munarium
+Server and Munarium Matrix. It is not published from here, and nothing here
+grants any right to it.
+
+Third-party software
+--------------------
+
+This repository vendors no third-party software. The GitHub Actions the workflow
+uses are pinned by commit in .github/workflows/ and are governed by their own
+licenses, which take precedence for each of them.
