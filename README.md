@@ -118,7 +118,9 @@ provenance and PyPI attestations name this one.
 ## Development
 
 `python3 -m unittest discover -s scripts -p 'test_*.py'` runs the planner's
-tests. `scripts/plan.py --offline` plans a release against a local checkout
+tests; the repository-wide gates (licence, private material, documentation
+links, secrets) are in [CONTRIBUTING.md](CONTRIBUTING.md).
+`scripts/plan.py --offline` plans a release against a local checkout
 without asking the registries:
 
 ```console
@@ -126,4 +128,58 @@ python3 scripts/plan.py --source iokaio/munarium-matrix --family matrix-clients 
   --tag matrix-clients-v1.2.0 --src ../munarium-matrix --offline
 ```
 
-Licensed under the Apache License 2.0 ([LICENSE](LICENSE)).
+## Where this repository sits
+
+Munarium is growing from a governed-memory foundation into the Munarium Governance Platform: nine
+open-source components (Registry, Harness, Warden, Gate, Gateway, Council, Sentinel, Assure and
+Console) around Munarium Server and Munarium Matrix, coordinated from the public hub
+[iokaio/munarium-platform](https://github.com/iokaio/munarium-platform). This repository is not one
+of the nine. It is release tooling for the foundation's client libraries, and it holds one
+platform invariant for them: **untrusted pull-request code cannot acquire release secrets or
+replace the controls that approve a release.** Preflight and build jobs hold no publishing
+credential; the NuGet, PyPI and Maven publish jobs run nothing from the source. `cargo publish`
+is the documented exception: packaging uses the verified source, with build-script verification
+completed before the credential is present. Publishing credentials live in a reviewer-gated
+environment that accepts this repository's `main` and nothing else.
+
+The platform plan expects Munarium Harness to publish client bindings that identify the contract
+digest they were generated from. Whether those packages publish through this repository is decided
+when they exist, as a change to `sources.json` reviewed like any other release setting.
+
+| Repository | Plane | Role |
+|---|---|---|
+| [iokaio/munarium-platform](https://github.com/iokaio/munarium-platform) | hub | Architecture, normative contracts, decision records, roadmap and composition evidence for the whole platform |
+| [iokaio/munarium](https://github.com/iokaio/munarium) | foundation (mediation) | Munarium Server: governed memory, the append-only ledger, and the Server client libraries |
+| [iokaio/munarium-matrix](https://github.com/iokaio/munarium-matrix) | foundation (mediation) | Munarium Matrix: governed, read-only structured evidence from enterprise data sources |
+| [iokaio/munarium-registry](https://github.com/iokaio/munarium-registry) | authority | Inventory of agents, tools, manifests, and policy bundles |
+| [iokaio/munarium-harness](https://github.com/iokaio/munarium-harness) | agent | SDKs that make the governed path easy for honest agents |
+| [iokaio/munarium-warden](https://github.com/iokaio/munarium-warden) | authority | Workload identity, delegation, just-in-time credentials, kill switches |
+| [iokaio/munarium-gate](https://github.com/iokaio/munarium-gate) | mediation | Policy decision and enforcement point for every tool call |
+| [iokaio/munarium-gateway](https://github.com/iokaio/munarium-gateway) | mediation | Model-call mediation: routing, BYOK, budgets, screening |
+| [iokaio/munarium-council](https://github.com/iokaio/munarium-council) | authority | Approvals, policy lifecycle, ratified governance transitions |
+| [iokaio/munarium-sentinel](https://github.com/iokaio/munarium-sentinel) | assurance | Telemetry, anomaly detection, circuit breakers, incident replay |
+| [iokaio/munarium-assure](https://github.com/iokaio/munarium-assure) | assurance | Control-framework mapping and evidence packs |
+| [iokaio/munarium-console](https://github.com/iokaio/munarium-console) | assurance | One interface for approvers, operators, and auditors |
+| [iokaio/munarium-clients-publish](https://github.com/iokaio/munarium-clients-publish) | tooling | The one place Munarium client packages are built for release and published from |
+| [iokaio/munarium-demo](https://github.com/iokaio/munarium-demo) | examples | Munarium Demo: working applications and bundled datasets for evaluating the foundation |
+
+The development tool VCP ([iokaio/vcp](https://github.com/iokaio/vcp)) is separate: not one of the
+nine components and not a runtime dependency for adopters. Ioka's private repositories hold
+planning material awaiting publication review and the proprietary Matrix analytics adapters;
+nothing from them is copied into a public repository without that review.
+
+## Licensing
+
+Apache-2.0 ([LICENSE](LICENSE), [NOTICE](NOTICE)). The names are not part of that grant:
+[TRADEMARK.md](TRADEMARK.md) says what you may do without asking, which is most things. A fork can
+publish its own packages under its own names; it cannot publish under Ioka's, which are
+trusted-publisher registrations tied to this repository.
+
+## Contributing, support, security
+
+Signed-off pull requests, no CLA ([CONTRIBUTING.md](CONTRIBUTING.md)); a change to `publish.yml`
+comes with a linked rehearsal run. Questions go to Discussions, defects in the workflow or planner
+to Issues, defects in a published package to its source repository, and suspected vulnerabilities to
+the private channel [SECURITY.md](SECURITY.md) names, never a public issue. What is and is not
+supported: [SUPPORT.md](SUPPORT.md). Conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). History of
+the workflow: [CHANGELOG.md](CHANGELOG.md).
