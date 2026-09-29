@@ -28,8 +28,10 @@ files say today.
    is a rehearsal that builds, tests and scans everything and reports what the
    registries already hold.
 4. Dispatch again with the registries ticked. Each publish job waits for a
-   reviewer on the `release` environment. Already-published versions are
-   skipped, so a partial failure is fixed by dispatching again.
+   reviewer on the `release` environment. No registry job starts until every
+   package type in the family has built and tested. Already-published versions
+   are skipped, so a registry-side partial failure is fixed by dispatching
+   again.
 
 For the Server's Rust client, publish `server-crates` before `server-clients`:
 `munarium-client` resolves its wire crates from crates.io.
@@ -42,14 +44,18 @@ For the Server's Rust client, publish `server-crates` before `server-clients`:
   request's final head or on the commit itself;
 - a tag that is not exactly the family's tag pattern at the version the tagged
   tree declares;
-- a `release.json` whose paths are not plain repository-relative paths, or
-  whose packages name an unknown registry or lack a field their build needs.
+- a `release.json` whose paths are not plain repository-relative paths, whose
+  package identifiers contain path or shell syntax, or whose packages name an
+  unknown registry or lack a field their build needs.
 
 It then runs the source's own gates (the `gates` list) before any build job
 starts. Source code runs only in jobs that hold no credential. The NuGet, PyPI
 and Maven publish jobs push what the build jobs uploaded; `cargo publish` is
 the one publish step that packages from source, because crates.io accepts no
-prebuilt package.
+prebuilt package. Its tests and package-file inspection run before the
+credential exists; the upload uses `cargo publish --no-verify` so source build
+scripts do not run with that credential in the environment, and invokes Cargo
+from this repository so source-owned `.cargo/config` files are not discovered.
 
 ## `clients/release.json`
 

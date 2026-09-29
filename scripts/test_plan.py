@@ -76,6 +76,19 @@ class PlanTests(unittest.TestCase):
         with self.assertRaises(plan.PlanError):
             self.plan(release(copy=[{"from": "server/proto", "to": "../../etc"}]))
 
+    def test_registry_identifiers_cannot_inject_paths_or_shell(self):
+        bad_packages = (
+            {"registry": "nuget", "id": "$(id)", "dir": "d", "project": "p", "tests": "t"},
+            {"registry": "pypi", "name": "name/../../other", "dir": "d"},
+            {"registry": "maven", "group": "io.example", "artifact": "a;curl", "dir": "d"},
+            {"registry": "crates", "crate": "crate name", "dir": "d"},
+        )
+        for package in bad_packages:
+            with self.subTest(package=package), self.assertRaisesRegex(
+                plan.PlanError, "plain registry identifier"
+            ):
+                self.plan(release(packages=[package]))
+
     def test_a_non_release_version_is_refused(self):
         (self.src / "clients/python/pyproject.toml").write_text('[project]\nversion = "main"\n')
         with self.assertRaisesRegex(plan.PlanError, "not a release version"):

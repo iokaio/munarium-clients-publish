@@ -45,6 +45,7 @@ REQUIRED = {
 }
 SAFE_PATH = re.compile(r"^(?!/)(?!.*(^|/)\.\.(/|$))[A-Za-z0-9._/-]+$")
 SAFE_FLAGS = re.compile(r"^(--[a-z][a-z-]*( --[a-z][a-z-]*)*)?$")
+SAFE_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 class PlanError(Exception):
@@ -64,6 +65,13 @@ def safe_path(value: str, what: str) -> str:
     """A repository-relative path: no absolute path, no `..`, no shell metacharacters."""
     if not isinstance(value, str) or not SAFE_PATH.match(value):
         raise PlanError(f"{what}: {value!r} is not a plain repository-relative path")
+    return value
+
+
+def safe_identifier(value: str, what: str) -> str:
+    """A registry identifier that is also safe in paths, labels and shells."""
+    if not isinstance(value, str) or not SAFE_IDENTIFIER.fullmatch(value):
+        raise PlanError(f"{what}: {value!r} is not a plain registry identifier")
     return value
 
 
@@ -125,7 +133,11 @@ def validate(sources: dict, release: dict, source: str, family: str, tag: str, s
             value = pkg.get(field)
             if not isinstance(value, str) or not value:
                 raise PlanError(f"{family} package {i} ({reg}): missing {field}")
-            entry[field] = safe_path(value, f"{family} package {i} {field}") if field in ("project", "tests") else value
+            entry[field] = (
+                safe_path(value, f"{family} package {i} {field}")
+                if field in ("project", "tests")
+                else safe_identifier(value, f"{family} package {i} {field}")
+            )
         if reg == "crates":
             flags = pkg.get("package_flags", "")
             if not SAFE_FLAGS.match(flags):

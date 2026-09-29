@@ -384,6 +384,7 @@ jobs:
           printf '%s' "$PLAN" | jq -r '.copy[] | "\(.from)|\(.to)"' | while IFS='|' read -r from to; do
             if [ ! -e "src/$to" ]; then cp -r "src/$from" "src/$to"; echo "copied $from -> $to"; fi
           done
+
       - name: each crate packages with the license files and nothing outside itself, and passes its tests
         # `cargo package --list` is the exact file set crates.io would receive.
         run: |
@@ -400,13 +401,40 @@ jobs:
             echo "::endgroup::"
           done
 
+  # No registry is allowed to publish until every package type in this family
+  # has built and tested. Without this barrier, NuGet could publish while the
+  # Java build was failing, leaving a release partially published for a reason
+  # known before publication began. Jobs for package types the family does not
+  # contain are expected to be skipped.
+  builds-passed:
+    needs: [preflight, build-dotnet, build-python, build-java, build-rust]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: every selected build passed
+        env:
+          PREFLIGHT: ${{ needs.preflight.result }}
+          DOTNET: ${{ needs.build-dotnet.result }}
+          PYTHON: ${{ needs.build-python.result }}
+          JAVA: ${{ needs.build-java.result }}
+          RUST: ${{ needs.build-rust.result }}
+        run: |
+          set -euo pipefail
+          [ "$PREFLIGHT" = success ]
+          for result in "$DOTNET" "$PYTHON" "$JAVA" "$RUST"; do
+            case "$result" in
+              success|skipped) ;;
+              *) echo "::error::not every package build passed ($DOTNET, $PYTHON, $JAVA, $RUST)"; exit 1 ;;
+            esac
+          done
+
   # ---------------------------------------------------------------------------
   # publish jobs: each gated by its input switch AND the `release` environment,
   # and each running only for packages preflight found missing from the
   # registry. A job whose to-do list is empty is skipped outright.
   # ---------------------------------------------------------------------------
   publish-nuget:
-    needs: [preflight, build-dotnet]
+    needs: [preflight, builds-passed]
     if: inputs.publish_nuget && fromJSON(needs.preflight.outputs.plan).nuget_todo[0] != null
     runs-on: ubuntu-latest
     environment: release
@@ -447,7 +475,7 @@ jobs:
           done
 
   publish-pypi:
-    needs: [preflight, build-python]
+    needs: [preflight, builds-passed]
     if: inputs.publish_pypi && fromJSON(needs.preflight.outputs.plan).pypi_todo[0] != null
     runs-on: ubuntu-latest
     environment: release
@@ -475,7 +503,7 @@ jobs:
           echo "- ${{ inputs.pypi_target }}: $(ls dist | tr '\n' ' ')" >> "$GITHUB_STEP_SUMMARY"
 
   publish-maven:
-    needs: [preflight, build-java]
+    needs: [preflight, builds-passed]
     if: inputs.publish_maven && fromJSON(needs.preflight.outputs.plan).maven_todo[0] != null
     runs-on: ubuntu-latest
     environment: release
@@ -552,7 +580,7 @@ jobs:
     # One job, not a matrix: the crates publish in the order the family lists
     # them, and cargo publish blocks until each is visible in the index so the
     # next can resolve it. Already-published crates are not in the to-do list.
-    needs: [preflight, build-rust]
+    needs: [preflight, builds-passed]
     if: inputs.publish_crates && fromJSON(needs.preflight.outputs.plan).crates_todo[0] != null
     runs-on: ubuntu-latest
     environment: release
@@ -583,12 +611,19 @@ jobs:
         id: auth
         uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
       - name: publish, in order
+        # The credentialless build-rust job already tested each crate and
+        # inspected its package file list. `--no-verify` prevents Cargo from
+        # rebuilding source (and running build.rs) while this short-lived
+        # publishing credential is present; invoking Cargo from this trusted
+        # repository root also keeps source-owned .cargo/config files out of
+        # configuration discovery. Cargo still packages and uploads the source
+        # from the verified commit, then waits for it in the index.
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
         run: |
           printf '%s' "$PLAN" | jq -r '.crates_todo[] | "\(.dir)|\(.crate)|\(.package_flags)"' \
           | while IFS='|' read -r dir crate flags; do
             echo "publishing $crate from $dir"
-            ( cd "src/$dir" && cargo publish -p "$crate" $flags )
+            cargo publish --no-verify --manifest-path "src/$dir/Cargo.toml" -p "$crate" $flags
             echo "- crates.io: \`$crate\`" >> "$GITHUB_STEP_SUMMARY"
           done
