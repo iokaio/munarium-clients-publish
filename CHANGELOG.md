@@ -6,6 +6,10 @@ packages it publishes are recorded in their source repositories.
 
 ## Unreleased
 
+- Fix registry jobs being silently skipped after successful wire-crate builds
+  because other package types do not apply to that family. Preserve preflight,
+  the all-builds barrier, cancellation, registry selection and release review.
+
 - **Governance and contribution files.** `NOTICE`; `SECURITY.md`; `CONTRIBUTING.md`; `SUPPORT.md`;
   `CODE_OF_CONDUCT.md`; `TRADEMARK.md`; `AGENTS.md` and its identical copy `CLAUDE.md`; issue and
   pull request templates; `CODEOWNERS` and `FUNDING.yml`; the DCO and repository-hygiene workflows

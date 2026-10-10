@@ -432,10 +432,13 @@ jobs:
   # publish jobs: each gated by its input switch AND the `release` environment,
   # and each running only for packages preflight found missing from the
   # registry. A job whose to-do list is empty is skipped outright.
+  # An explicit status function avoids the implicit success() check propagating
+  # intentionally skipped package builds through builds-passed. Still require
+  # both preflight and the complete build barrier to succeed, and honor cancellation.
   # ---------------------------------------------------------------------------
   publish-nuget:
     needs: [preflight, builds-passed]
-    if: inputs.publish_nuget && fromJSON(needs.preflight.outputs.plan).nuget_todo[0] != null
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.builds-passed.result == 'success' && inputs.publish_nuget && fromJSON(needs.preflight.outputs.plan).nuget_todo[0] != null }}
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -476,7 +479,7 @@ jobs:
 
   publish-pypi:
     needs: [preflight, builds-passed]
-    if: inputs.publish_pypi && fromJSON(needs.preflight.outputs.plan).pypi_todo[0] != null
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.builds-passed.result == 'success' && inputs.publish_pypi && fromJSON(needs.preflight.outputs.plan).pypi_todo[0] != null }}
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -504,7 +507,7 @@ jobs:
 
   publish-maven:
     needs: [preflight, builds-passed]
-    if: inputs.publish_maven && fromJSON(needs.preflight.outputs.plan).maven_todo[0] != null
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.builds-passed.result == 'success' && inputs.publish_maven && fromJSON(needs.preflight.outputs.plan).maven_todo[0] != null }}
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -581,7 +584,7 @@ jobs:
     # them, and cargo publish blocks until each is visible in the index so the
     # next can resolve it. Already-published crates are not in the to-do list.
     needs: [preflight, builds-passed]
-    if: inputs.publish_crates && fromJSON(needs.preflight.outputs.plan).crates_todo[0] != null
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.builds-passed.result == 'success' && inputs.publish_crates && fromJSON(needs.preflight.outputs.plan).crates_todo[0] != null }}
     runs-on: ubuntu-latest
     environment: release
     permissions:
