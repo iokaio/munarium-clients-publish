@@ -36,6 +36,13 @@ files say today.
 For the Server's Rust client, publish `server-crates` before `server-clients`:
 `munarium-client` resolves its wire crates from crates.io.
 
+Package types outside the selected family are intentionally skipped. Publish
+jobs use an explicit cancellation check so those skipped builds do not suppress
+uploads after the build barrier passes. Preflight and the full build barrier
+must both succeed; cancelled runs, unticked registries and already-published
+versions cannot upload. A successful rehearsal proves the builds, not registry
+publication: verify the publish jobs and the resulting registry versions too.
+
 ### What preflight refuses
 
 - a source or family [`sources.json`](sources.json) does not list;
